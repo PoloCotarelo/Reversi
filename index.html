@@ -3,385 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reversi / Othello</title>
+    <title>Othello - Vibe Coding Edition</title>
     <style>
         :root {
             --board-bg: #2e7d32;
             --cell-border: #1b5e20;
             --black-piece: #212121;
-            --white-piece: #ffffff;
-            --bg-color: #f5f5f5;
-            --text-color: #333;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --white-piece: #f5f5f5;
+            --highlight: rgba(255, 255, 255, 0.2);
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            margin: 0;
         }
 
-        .container {
-            max-width: 600px;
-            width: 100%;
+        .status-panel {
+            margin-bottom: 20px;
             text-align: center;
         }
 
-        h1 {
-            margin-bottom: 10px;
-        }
-
-        .stats-panel {
-            display: flex;
-            justify-content: space-around;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .current-turn {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin-top: 5px;
-            transition: all 0.3s;
-        }
-
-        .turn-black { background: var(--black-piece); color: white; }
-        .turn-white { background: #eee; color: black; border: 1px solid #ccc; }
-
-        /* Estilos del Tablero */
-        #board {
+        #game-board {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
             background-color: var(--cell-border);
-            border: 5px solid var(--cell-border);
-            border-radius: 8px;
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            margin: 0 auto;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 10px solid #3e2723;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .cell {
+            width: 60px;
+            height: 60px;
             background-color: var(--board-bg);
             border: 1px solid var(--cell-border);
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             cursor: pointer;
             position: relative;
         }
 
         .cell:hover {
-            filter: brightness(1.1);
+            background-color: #388e3c;
         }
 
-        /* Fichas */
         .piece {
-            width: 85%;
-            height: 85%;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 4px rgba(0,0,0,0.3);
+            transition: transform 0.4s ease, background-color 0.4s ease;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
         }
 
         .piece.black {
             background-color: var(--black-piece);
-            transform: rotateY(0deg);
+            background: radial-gradient(circle at 30% 30%, #444, #000);
         }
 
         .piece.white {
             background-color: var(--white-piece);
-            transform: rotateY(180deg);
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
         }
 
-        /* Movimiento sugerido */
-        .hint {
-            width: 25%;
-            height: 25%;
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        /* Mensajes de fin de juego */
-        #message-box {
+        .scores {
+            display: flex;
+            gap: 40px;
+            font-size: 1.5rem;
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
-            background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #1976d2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            transition: background 0.2s;
+        .current-turn {
+            font-weight: bold;
+            color: #ffca28;
             margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #1565c0;
-        }
-
-        @media (max-width: 500px) {
-            .container { padding: 5px; }
-            h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Reversi / Othello</h1>
-    
-    <div class="stats-panel">
-        <div class="stat-item">
-            <span>Negras</span>
-            <div id="black-score" class="stat-value">2</div>
-        </div>
-        <div class="stat-item">
-            <span>Turno de:</span>
-            <div id="turn-display" class="current-turn turn-black">NEGRAS</div>
-        </div>
-        <div class="stat-item">
-            <span>Blancas</span>
-            <div id="white-score" class="stat-value">2</div>
-        </div>
+    <div class="status-panel">
+        <h1>OTHELLO</h1>
+        <div id="turn-indicator" class="current-turn">Turno: Negras</div>
     </div>
 
-    <div id="board"></div>
+    <div id="game-board"></div>
 
-    <div id="message-box">
-        <h2 id="winner-text">¡Fin de la partida!</h2>
-        <button onclick="resetGame()">Nueva Partida</button>
+    <div class="scores">
+        <div>Negras: <span id="black-score">2</span></div>
+        <div>Blancas: <span id="white-score">2</span></div>
     </div>
-</div>
 
-<script>
-    // Configuración inicial
-    const BOARD_SIZE = 8;
-    const EMPTY = 0;
-    const BLACK = 1;
-    const WHITE = 2;
+    <script>
+        // Configuración inicial
+        const BOARD_SIZE = 8;
+        let board = [];
+        let currentPlayer = 'black'; // 'black' o 'white'
 
-    let board = [];
-    let currentPlayer = BLACK;
+        const boardElement = document.getElementById('game-board');
+        const blackScoreEl = document.getElementById('black-score');
+        const whiteScoreEl = document.getElementById('white-score');
+        const turnIndicator = document.getElementById('turn-indicator');
 
-    const boardElement = document.getElementById('board');
-    const blackScoreElement = document.getElementById('black-score');
-    const whiteScoreElement = document.getElementById('white-score');
-    const turnDisplay = document.getElementById('turn-display');
-    const messageBox = document.getElementById('message-box');
-    const winnerText = document.getElementById('winner-text');
+        // Inicializar matriz de datos
+        function initData() {
+            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+            // Fichas iniciales del Othello
+            board[3][3] = 'white';
+            board[3][4] = 'black';
+            board[4][3] = 'black';
+            board[4][4] = 'white';
+        }
 
-    // Inicializar el juego al cargar
-    window.onload = () => {
-        initGame();
-    };
+        // Dibujar el tablero en el DOM
+        function drawBoard() {
+            boardElement.innerHTML = '';
+            let blackCount = 0;
+            let whiteCount = 0;
 
-    function initGame() {
-        // Crear matriz vacía
-        board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
-        
-        // Posición inicial estándar de Othello
-        const mid = BOARD_SIZE / 2;
-        board[mid-1][mid-1] = WHITE;
-        board[mid][mid] = WHITE;
-        board[mid-1][mid] = BLACK;
-        board[mid][mid-1] = BLACK;
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.onclick = () => handleMove(r, c);
 
-        currentPlayer = BLACK;
-        messageBox.style.display = 'none';
-        updateGame();
-    }
+                    if (board[r][c]) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${board[r][c]}`;
+                        cell.appendChild(piece);
+                        
+                        if (board[r][c] === 'black') blackCount++;
+                        else whiteCount++;
+                    }
 
-    function createBoardUI() {
-        boardElement.innerHTML = '';
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.row = r;
-                cell.dataset.col = c;
-                
-                const pieceValue = board[r][c];
-                if (pieceValue !== EMPTY) {
-                    const piece = document.createElement('div');
-                    piece.className = `piece ${pieceValue === BLACK ? 'black' : 'white'}`;
-                    cell.appendChild(piece);
-                } else if (isValidMove(r, c, currentPlayer)) {
-                    const hint = document.createElement('div');
-                    hint.className = 'hint';
-                    cell.appendChild(hint);
+                    boardElement.appendChild(cell);
                 }
-
-                cell.addEventListener('click', () => handleCellClick(r, c));
-                boardElement.appendChild(cell);
-            }
-        }
-    }
-
-    function handleCellClick(r, c) {
-        if (!isValidMove(r, c, currentPlayer)) return;
-
-        makeMove(r, c, currentPlayer);
-        
-        // Cambiar turno
-        const nextPlayer = currentPlayer === BLACK ? WHITE : BLACK;
-        
-        if (hasAnyValidMove(nextPlayer)) {
-            currentPlayer = nextPlayer;
-        } else if (!hasAnyValidMove(currentPlayer)) {
-            // Fin del juego: Nadie puede mover
-            endGame();
-            return;
-        } else {
-            // El siguiente jugador no tiene movimientos, se salta el turno
-            console.log(`El jugador ${nextPlayer === BLACK ? 'Negro' : 'Blanco'} no tiene movimientos válidos.`);
-        }
-
-        updateGame();
-    }
-
-    function isValidMove(r, c, player) {
-        if (board[r][c] !== EMPTY) return false;
-        return getFlippableDiscs(r, c, player).length > 0;
-    }
-
-    function getFlippableDiscs(r, c, player) {
-        const opponent = player === BLACK ? WHITE : BLACK;
-        const flippable = [];
-        // Se definen las 8 direcciones posibles (horizontal, vertical y diagonales)
-        const directions = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],          ,
-            [1, -1], , 
-        ];
-
-        for (const direction of directions) {
-            const dr = direction;
-            const dc = direction;
-            
-            let currentR = r + dr;
-            let currentC = c + dc;
-            let potentialFlippable = [];
-
-            while (
-                currentR >= 0 && currentR < BOARD_SIZE &&
-                currentC >= 0 && currentC < BOARD_SIZE &&
-                board[currentR][currentC] === opponent
-            ) {
-                potentialFlippable.push([currentR, currentC]);
-                currentR += dr;
-                currentC += dc;
             }
 
-            if (
-                currentR >= 0 && currentR < BOARD_SIZE &&
-                currentC >= 0 && currentC < BOARD_SIZE &&
-                board[currentR][currentC] === player &&
-                potentialFlippable.length > 0
-            ) {
-                flippable.push(...potentialFlippable);
-            }
+            blackScoreEl.textContent = blackCount;
+            whiteScoreEl.textContent = whiteCount;
+            turnIndicator.textContent = `Turno: ${currentPlayer === 'black' ? 'Negras' : 'Blancas'}`;
         }
 
-        return flippable;
-    }
+        // Lógica de movimiento
+        function handleMove(r, c) {
+            if (board[r][c]) return; // Celda ocupada
 
-    function makeMove(r, c, player) {
-        const flippable = getFlippableDiscs(r, c, player);
-        board[r][c] = player;
-        
-        flippable.forEach(([fr, fc]) => {
-            board[fr][fc] = player;
-        });
-    }
+            const flips = getFlips(r, c, currentPlayer);
+            if (flips.length === 0) return; // Movimiento ilegal
 
-    function hasAnyValidMove(player) {
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                if (isValidMove(r, c, player)) return true;
-            }
-        }
-        return false;
-    }
-
-    function updateGame() {
-        const scores = calculateScore();
-        blackScoreElement.innerText = scores.black;
-        whiteScoreElement.innerText = scores.white;
-
-        turnDisplay.innerText = currentPlayer === BLACK ? 'NEGRAS' : 'BLANCAS';
-        turnDisplay.className = `current-turn ${currentPlayer === BLACK ? 'turn-black' : 'turn-white'}`;
-
-        createBoardUI();
-    }
-
-    function calculateScore() {
-        let black = 0;
-        let white = 0;
-        board.forEach(row => {
-            row.forEach(cell => {
-                if (cell === BLACK) black++;
-                if (cell === WHITE) white++;
+            // Ejecutar movimiento
+            board[r][c] = currentPlayer;
+            flips.forEach(([fr, fc]) => {
+                board[fr][fc] = currentPlayer;
             });
-        });
-        return { black, white };
-    }
 
-    function endGame() {
-        updateGame();
-        const scores = calculateScore();
-        let text = "";
-        
-        if (scores.black > scores.white) {
-            text = `¡Ganan las NEGRAS! (${scores.black} - ${scores.white})`;
-        } else if (scores.white > scores.black) {
-            text = `¡Ganan las BLANCAS! (${scores.white} - ${scores.black})`;
-        } else {
-            text = "¡Empate!";
+            // Cambiar turno
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            
+            // Nota: Aquí faltaría lógica para saltar turno si no hay movimientos
+            // o detectar fin de juego, pero empezamos con lo básico.
+            drawBoard();
         }
 
-        winnerText.innerText = text;
-        messageBox.style.display = 'block';
-    }
+        // Encontrar fichas que deben voltearse
+        function getFlips(r, c, player) {
+            const opponent = player === 'black' ? 'white' : 'black';
+            const directions = [
+                [0, 1], [0, -1], [1, 0], [-1, 0],
+                [1, 1], [1, -1], [-1, 1], [-1, -1]
+            ];
+            let allFlips = [];
 
-    function resetGame() {
-        initGame();
-    }
-</script>
+            directions.forEach(([dr, dc]) => {
+                let currentFlips = [];
+                let currR = r + dr;
+                let currC = c + dc;
 
+                while (currR >= 0 && currR < BOARD_SIZE && currC >= 0 && currC < BOARD_SIZE) {
+                    if (board[currR][currC] === opponent) {
+                        currentFlips.push([currR, currC]);
+                    } else if (board[currR][currC] === player) {
+                        if (currentFlips.length > 0) {
+                            allFlips = allFlips.concat(currentFlips);
+                        }
+                        break;
+                    } else {
+                        break;
+                    }
+                    currR += dr;
+                    currC += dc;
+                }
+            });
+
+            return allFlips;
+        }
+
+        // Inicio
+        window.onload = () => {
+            initData();
+            drawBoard();
+        };
+    </script>
 </body>
 </html>
