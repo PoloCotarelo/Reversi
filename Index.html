@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otelo / Reversi JS</title>
+    <style>
+        :root {
+            --bg-color: #2c3e50;
+            --board-color: #27ae60;
+            --cell-border: #1e8449;
+            --black-piece: #000;
+            --white-piece: #fff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 10px; }
+
+        #status {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            background-color: var(--cell-border);
+            border: 5px solid #145a32;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: var(--board-color);
+            border: 1px solid var(--cell-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .piece {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: transform 0.3s ease, background-color 0.4s;
+        }
+
+        .black { background-color: var(--black-piece); box-shadow: inset -2px -2px 5px rgba(255,255,255,0.2); }
+        .white { background-color: var(--white-piece); box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2); }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #e67e22;
+            color: white;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #d35400; }
+        
+        .score { font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+    <h1>Otelo</h1>
+    <div id="status">Turno de: Negras</div>
+    
+    <div id="board"></div>
+
+    <div class="score">
+        Negras: <span id="black-score">2</span> | Blancas: <span id="white-score">2</span>
+    </div>
+
+    <div class="controls">
+        <button onclick="resetGame()">Reiniciar Juego</button>
+    </div>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const blackScoreElement = document.getElementById('black-score');
+        const whiteScoreElement = document.getElementById('white-score');
+
+        let board = [];
+        let currentPlayer = 1; // 1 = Negro, 2 = Blanco
+
+        function initBoard() {
+            board = Array(8).fill(null).map(() => Array(8).fill(0));
+            // Posición inicial estándar
+            board = 2;
+            board = 1;
+            board = 1;
+            board = 2;
+        }
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            let blackCount = 0;
+            let whiteCount = 0;
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.onclick = () => handleMove(r, c);
+
+                    if (board[r][c] !== 0) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${board[r][c] === 1 ? 'black' : 'white'}`;
+                        cell.appendChild(piece);
+                        if (board[r][c] === 1) blackCount++;
+                        else whiteCount++;
+                    }
+
+                    boardElement.appendChild(cell);
+                }
+            }
+            blackScoreElement.innerText = blackCount;
+            whiteScoreElement.innerText = whiteCount;
+            statusElement.innerText = `Turno de: ${currentPlayer === 1 ? 'Negras' : 'Blancas'}`;
+        }
+
+        function handleMove(r, c) {
+            if (board[r][c] !== 0) return;
+
+            const flips = getFlips(r, c, currentPlayer);
+            if (flips.length === 0) return; // Movimiento no válido
+
+            board[r][c] = currentPlayer;
+            flips.forEach(([fr, fc]) => {
+                board[fr][fc] = currentPlayer;
+            });
+
+            currentPlayer = 3 - currentPlayer; // Cambiar turno (1->2, 2->1)
+            
+            // Si el siguiente jugador no tiene movimientos, vuelve al anterior
+            if (!hasValidMoves(currentPlayer)) {
+                currentPlayer = 3 - currentPlayer;
+                if (!hasValidMoves(currentPlayer)) {
+                    statusElement.innerText = "¡Juego terminado!";
+                    alert("Fin de la partida");
+                }
+            }
+            renderBoard();
+        }
+
+        function getFlips(r, c, player) {
+            const directions = [
+               , [0, -1],, [-1, 0],
+               , [1, -1], [-1, 1], [-1, -1]
+            ];
+            let totalFlips = [];
+
+            directions.forEach(([dr, dc]) => {
+                let r_next = r + dr;
+                let c_next = c + dc;
+                let candidateFlips = [];
+
+                while (r_next >= 0 && r_next < 8 && c_next >= 0 && c_next < 8) {
+                    if (board[r_next][c_next] === 0) break;
+                    if (board[r_next][c_next] === player) {
+                        totalFlips = totalFlips.concat(candidateFlips);
+                        break;
+                    }
+                    candidateFlips.push([r_next, c_next]);
+                    r_next += dr;
+                    c_next += dc;
+                }
+            });
+            return totalFlips;
+        }
+
+        function hasValidMoves(player) {
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (board[r][c] === 0 && getFlips(r, c, player).length > 0) return true;
+                }
+            }
+            return false;
+        }
+
+        function resetGame() {
+            currentPlayer = 1;
+            initBoard();
+            renderBoard();
+        }
+
+        initBoard();
+        renderBoard();
+    </script>
+</body>
+</html>
