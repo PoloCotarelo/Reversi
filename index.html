@@ -163,6 +163,8 @@
             board[4][4] = 'white';
             currentPlayer = 'black';
             modal.style.display = 'none';
+            isBlackAI = false;
+            isWhiteAI = false;
         }
 
         function drawBoard() {
@@ -203,18 +205,6 @@
             blackScoreEl.textContent = blackCount;
             whiteScoreEl.textContent = whiteCount;
             turnIndicator.textContent = `Turno: ${currentPlayer === 'black' ? 'Negras' : 'Blancas'}`;
-        }
-
-        function getAllLegalMoves(player) {
-            const moves = [];
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (!board[r][c] && getFlips(r, c, player).length > 0) {
-                        moves.push({ r, c });
-                    }
-                }
-            }
-            return moves;
         }
 
         function handleMove(r, c) {
@@ -277,7 +267,7 @@
                 let currentFlips = [], currR = r + dr, currC = c + dc;
                 while (currR >= 0 && currR < BOARD_SIZE && currC >= 0 && currC < BOARD_SIZE) {
                     if (targetBoard[currR][currC] === opponent) currentFlips.push([currR, currC]);
-                    else if (TargetBoard[currR][currC] === player) {
+                    else if (targetBoard[currR][currC] === player) {
                         if (currentFlips.length > 0) allFlips = allFlips.concat(currentFlips);
                         break;
                     } else break;
