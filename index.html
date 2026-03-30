@@ -2,164 +2,172 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Otelo Reversi - Versión Estable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Otelo Reversi - iPad Ready</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #2c3e50;
             color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 20px;
+            margin: 0;
+            padding: 20px;
+            touch-action: manipulation; /* Optimiza el toque en iPad */
         }
 
         #board {
             display: grid;
-            grid-template-columns: repeat(8, 50px);
-            grid-template-rows: repeat(8, 50px);
-            gap: 2px; /* Espacio entre casillas */
-            background-color: #145a32; /* Color de las líneas */
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            background-color: #145a32;
             padding: 5px;
-            border-radius: 4px;
+            border-radius: 8px;
+            width: 90vw; /* Ajuste responsivo para iPad */
+            max-width: 400px;
+            height: 90vw;
+            max-height: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .cell {
-            width: 50px;
-            height: 50px;
             background-color: #27ae60;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent; /* Elimina el cuadro azul al tocar */
         }
 
         .piece {
-            width: 40px;
-            height: 40px;
+            width: 80%;
+            height: 80%;
             border-radius: 50%;
-            transition: all 0.3s ease;
+            transition: transform 0.2s;
         }
 
-        .black { background-color: #000; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .white { background-color: #fff; box-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .black { background-color: #000; box-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+        .white { background-color: #fff; box-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
 
-        .info { margin: 20px; text-align: center; }
-        button { padding: 8px 16px; cursor: pointer; background: #e67e22; color: white; border: none; border-radius: 4px; }
+        .status-box { margin: 15px 0; font-size: 1.2rem; font-weight: bold; }
+        .score-box { margin-bottom: 15px; }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            -webkit-appearance: none; /* Estilo nativo de iOS fuera */
+        }
     </style>
 </head>
 <body>
 
-    <h2>Otelo / Reversi</h2>
-    <div id="status">Turno: Negras</div>
+    <div class="status-box" id="status">Turno: Negras</div>
     
     <div id="board"></div>
 
-    <div class="info">
-        Negras: <span id="black-score">2</span> | Blancas: <span id="white-score">2</span>
-        <br><br>
-        <button id="resetBtn">Reiniciar Partida</button>
+    <div class="score-box">
+        Negras: <b id="black-score">2</b> | Blancas: <b id="white-score">2</b>
     </div>
+
+    <button id="resetBtn">Reiniciar Juego</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const boardElement = document.getElementById('board');
             const statusElement = document.getElementById('status');
-            const blackScoreElement = document.getElementById('black-score');
-            const whiteScoreElement = document.getElementById('white-score');
+            const bScore = document.getElementById('black-score');
+            const wScore = document.getElementById('white-score');
             const resetBtn = document.getElementById('resetBtn');
 
             let board = [];
-            let currentPlayer = 1; // 1: Negro, 2: Blanco
+            let currentPlayer = 1;
 
-            function initGame() {
-                // Crear matriz 8x8 vacía
+            function init() {
                 board = Array(8).fill(null).map(() => Array(8).fill(0));
-                // Posiciones iniciales clásicas
                 board = 2; board = 1;
                 board = 1; board = 2;
                 currentPlayer = 1;
-                render();
+                draw();
             }
 
-            function render() {
+            function draw() {
                 boardElement.innerHTML = '';
-                let bCount = 0, wCount = 0;
+                let counts = { 1: 0, 2: 0 };
 
                 for (let r = 0; r < 8; r++) {
                     for (let c = 0; c < 8; c++) {
                         const cell = document.createElement('div');
                         cell.className = 'cell';
-                        cell.dataset.row = r;
-                        cell.dataset.col = c;
                         
-                        if (board[r][c] !== 0) {
-                            const piece = document.createElement('div');
-                            piece.className = `piece ${board[r][c] === 1 ? 'black' : 'white'}`;
-                            cell.appendChild(piece);
-                            board[r][c] === 1 ? bCount++ : wCount++;
-                        }
+                        // Añadimos tanto click como touchend por si acaso
+                        cell.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            makeMove(r, c);
+                        });
 
-                        cell.onclick = () => makeMove(r, c);
+                        if (board[r][c] !== 0) {
+                            const p = document.createElement('div');
+                            p.className = `piece ${board[r][c] === 1 ? 'black' : 'white'}`;
+                            cell.appendChild(p);
+                            counts[board[r][c]]++;
+                        }
                         boardElement.appendChild(cell);
                     }
                 }
-                blackScoreElement.textContent = bCount;
-                whiteScoreElement.textContent = wCount;
+                bScore.textContent = counts;
+                wScore.textContent = counts;
                 statusElement.textContent = `Turno: ${currentPlayer === 1 ? 'Negras' : 'Blancas'}`;
+            }
+
+            function getFlips(r, c, player) {
+                const dirs = [,[0,-1],,[-1,0],,[1,-1],[-1,1],[-1,-1]];
+                let total = [];
+                dirs.forEach(([dr, dc]) => {
+                    let path = [], curR = r + dr, curC = c + dc;
+                    while (curR >= 0 && curR < 8 && curC >= 0 && curC < 8) {
+                        if (board[curR][curC] === 0) break;
+                        if (board[curR][curC] === player) {
+                            total = total.concat(path);
+                            break;
+                        }
+                        path.push([curR, curC]);
+                        curR += dr; curC += dc;
+                    }
+                });
+                return total;
             }
 
             function makeMove(r, c) {
                 if (board[r][c] !== 0) return;
-
-                const piecesToFlip = getFlips(r, c, currentPlayer);
-                if (piecesToFlip.length === 0) return;
+                const flips = getFlips(r, c, currentPlayer);
+                if (flips.length === 0) return;
 
                 board[r][c] = currentPlayer;
-                piecesToFlip.forEach(([fr, fc]) => board[fr][fc] = currentPlayer);
-
+                flips.forEach(([fr, fc]) => board[fr][fc] = currentPlayer);
                 currentPlayer = 3 - currentPlayer;
 
-                // Comprobar si el siguiente puede mover
-                if (!canMove(currentPlayer)) {
+                if (!canAnyMove(currentPlayer)) {
                     currentPlayer = 3 - currentPlayer;
-                    if (!canMove(currentPlayer)) {
-                        alert("Fin del juego. ¡Gran partida!");
-                    }
+                    if (!canAnyMove(currentPlayer)) alert("Partida Finalizada");
                 }
-                render();
+                draw();
             }
 
-            function getFlips(r, c, player) {
-                const directions = [,[0,-1],,[-1,0],,[1,-1],[-1,1],[-1,-1]];
-                let flips = [];
-                directions.forEach(([dr, dc]) => {
-                    let temp = [];
-                    let currR = r + dr, currC = c + dc;
-                    while (currR >= 0 && currR < 8 && currC >= 0 && currC < 8) {
-                        if (board[currR][currC] === 0) break;
-                        if (board[currR][currC] === player) {
-                            flips = flips.concat(temp);
-                            break;
-                        }
-                        temp.push([currR, currC]);
-                        currR += dr; currC += dc;
-                    }
-                });
-                return flips;
-            }
-
-            function canMove(player) {
-                for(let r=0; r<8; r++) {
-                    for(let c=0; c<8; c++) {
-                        if (board[r][c] === 0 && getFlips(r,c,player).length > 0) return true;
-                    }
-                }
+            function canAnyMove(p) {
+                for(let r=0; r<8; r++)
+                    for(let c=0; c<8; c++)
+                        if(board[r][c] === 0 && getFlips(r,c,p).length > 0) return true;
                 return false;
             }
 
-            resetBtn.onclick = initGame;
-            initGame();
+            resetBtn.onclick = init;
+            init();
         });
     </script>
 </body>
