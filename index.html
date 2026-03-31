@@ -340,29 +340,39 @@
 
         function getBestMove() {
             const moves = getAllLegalMoves(currentPlayer, board);
-            let bestMove = null;
-            if (currentPlayer === 'black') {
-                let maxEval = -Infinity;
-                for (const move of moves) {
-                    const nextBoard = JSON.parse(JSON.stringify(board));
-                    const flips = getFlips(move.r, move.c, 'black', nextBoard);
-                    nextBoard[move.r][move.c] = 'black';
-                    flips.forEach(([fr, fc]) => nextBoard[fr][fc] = 'black');
-                    let ev = minimax(nextBoard, 3, -Infinity, Infinity, false);
-                    if (ev > maxEval) { maxEval = ev; bestMove = move; }
-                }
-            } else {
-                let minEval = Infinity;
-                for (const move of moves) {
-                    const nextBoard = JSON.parse(JSON.stringify(board));
-                    const flips = getFlips(move.r, move.c, 'white', nextBoard);
-                    nextBoard[move.r][move.c] = 'white';
-                    flips.forEach(([fr, fc]) => nextBoard[fr][fc] = 'white');
-                    let ev = minimax(nextBoard, 3, -Infinity, Infinity, true);
-                    if (ev < minEval) { minEval = ev; bestMove = move; }
+            if (moves.length === 0) return null;
+
+            let bestMoves = [];
+            let bestEval = (currentPlayer === 'black') ? -Infinity : Infinity;
+
+            for (const move of moves) {
+                const nextBoard = JSON.parse(JSON.stringify(board));
+                const flips = getFlips(move.r, move.c, currentPlayer, nextBoard);
+                nextBoard[move.r][move.c] = currentPlayer;
+                flips.forEach(([fr, fc]) => nextBoard[fr][fc] = currentPlayer);
+
+                // Evaluamos a profundidad 3
+                let ev = minimax(nextBoard, 3, -Infinity, Infinity, currentPlayer === 'white');
+
+                if (currentPlayer === 'black') {
+                    if (ev > bestEval) {
+                        bestEval = ev;
+                        bestMoves = [move];
+                    } else if (ev === bestEval) {
+                        bestMoves.push(move);
+                    }
+                } else {
+                    if (ev < bestEval) {
+                        bestEval = ev;
+                        bestMoves = [move];
+                    } else if (ev === bestEval) {
+                        bestMoves.push(move);
+                    }
                 }
             }
-            return bestMove;
+            
+            // Elegimos una al azar entre las que tienen la misma puntuación máxima
+            return bestMoves[Math.floor(Math.random() * bestMoves.length)];
         }
         
         function makeAIMove() {
