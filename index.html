@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Othello - Amthello Retro Edition</title>
+    <title>Cot-hello - Cot-hello CPC Edition</title>
     <style>
         :root {
             /* Modern Colors */
@@ -51,13 +51,13 @@
             user-select: none;
         }
 
-        /* El marco del tablero es ahora el disparador del Easter Egg */
+        /* El marco del tablero es el disparador del Easter Egg */
         .board-container {
             padding: 15px;
             background-color: #3e2723;
             border-radius: 5px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            cursor: pointer; /* Indica que es interactivo aunque sea secreto */
+            cursor: pointer; 
             transition: background-color 0.3s;
         }
 
@@ -73,7 +73,7 @@
             grid-template-rows: repeat(8, 60px);
             background-color: var(--cell-border);
             perspective: 1000px;
-            cursor: default; /* El interior del tablero tiene cursor normal */
+            cursor: default;
         }
 
         .cell {
@@ -202,11 +202,10 @@
 <body>
 
     <div class="status-panel">
-        <h1 id="title-text" onclick="resetGame()" title="Clic para reiniciar">OTHELLO</h1>
+        <h1 id="title-text" onclick="resetGame()" title="Clic para reiniciar">COT-HELLO</h1>
         <div id="turn-indicator" class="current-turn">Turno: Negras</div>
     </div>
 
-    <!-- El contenedor del tablero ahora es el botón secreto -->
     <div class="board-container" onclick="toggleRetro(event)">
         <div id="game-board"></div>
     </div>
@@ -255,14 +254,13 @@
             modal.style.display = 'none';
         }
 
-        // Función para cambiar modo, activada por el marco
         function toggleRetro(event) {
-            // Solo se activa si haces clic en el contenedor pero NO en las celdas
             if (event.target.classList.contains('board-container')) {
                 document.body.classList.toggle('retro');
                 const title = document.getElementById('title-text');
-                title.textContent = document.body.classList.contains('retro') ? "AMTHELLO CPC" : "OTHELLO";
-                playStoneSound(); // Un pequeño feedback sonoro al cambiar
+                // Actualizado el nombre del modo retro según tu petición
+                title.textContent = document.body.classList.contains('retro') ? "COT-HELLO CPC" : "COT-HELLO";
+                playStoneSound(); 
             }
         }
 
@@ -403,7 +401,7 @@
             else if (getAllLegalMoves(currentPlayer).length === 0) { endGame(); return; }
             drawBoard();
             if ((currentPlayer === 'black' && isBlackAI) || (currentPlayer === 'white' && isWhiteAI)) {
-                setTimeout(makeAIMove, 200);
+                setTimeout(makeAIMove, 400);
             }
         }
 
