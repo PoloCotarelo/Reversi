@@ -231,7 +231,7 @@
                 }, 2000);
             }
             if ((currentPlayer === 'black' && isBlackAI) || (currentPlayer === 'white' && isWhiteAI)) {
-                setTimeout(makeAIMove, 600);
+                setTimeout(makeAIMove, 200);
             }
             
             drawBoard();
@@ -377,7 +377,7 @@
             const gainNode = audioCtx.createGain();
 
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
 
             gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
