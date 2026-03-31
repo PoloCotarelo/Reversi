@@ -3,26 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Othello - Vibe Coding Edition</title>
+    <title>Othello - Amthello Retro Edition</title>
     <style>
         :root {
+            /* Modern Colors */
             --board-bg: #2e7d32;
             --cell-border: #1b5e20;
             --black-piece: #212121;
             --white-piece: #d4d4d4;
             --legal-move: rgba(0, 0, 0, 0.2);
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --accent: #ffca28;
+        }
+
+        /* Amstrad CPC Retro Style */
+        body.retro {
+            --board-bg: #000080; /* Classic CPC Blue */
+            --cell-border: #00ffff; /* Bright Cyan */
+            --bg-color: #000000;
+            --text-color: #00ff00; /* Phosphor Green */
+            --accent: #ffff00;
+            font-family: 'Courier New', Courier, monospace;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: white;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden;
+            transition: background-color 0.5s;
         }
 
         .status-panel {
@@ -37,6 +53,12 @@
             background-color: var(--cell-border);
             border: 10px solid #3e2723;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            perspective: 1000px;
+        }
+
+        body.retro #game-board {
+            border: 10px solid #555;
+            box-shadow: 0 0 20px var(--text-color);
         }
 
         .cell {
@@ -49,13 +71,14 @@
             justify-content: center;
             cursor: pointer;
             position: relative;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         .cell:hover {
-            background-color: #388e3c;
+            opacity: 0.8;
         }
 
-        /* Indicador de movimiento legal */
         .cell.legal::after {
             content: '';
             width: 12px;
@@ -64,23 +87,62 @@
             border-radius: 50%;
         }
 
+        body.retro .cell.legal::after {
+            background-color: var(--accent);
+            border-radius: 0; 
+        }
+
         .piece {
             width: 48px;
             height: 48px;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .piece div {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            transition: transform 0.4s ease, background-color 0.4s ease;
+            backface-visibility: hidden;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            top: 0;
+            left: 0;
         }
 
-        .piece.black {
-            background-color: var(--black-piece);
+        body.retro .piece div {
+            border-radius: 0; 
+            box-shadow: none;
+            border: 4px solid #fff; 
+            box-sizing: border-box;
+        }
+
+        .piece .black-side {
             background: radial-gradient(circle at 30% 30%, #444, #000);
+            z-index: 2;
         }
 
-        .piece.white {
-            background-color: var(--white-piece);
-            background: radial-gradient(circle at 30% 30%, #ffffff, #8c8c8c);
+        body.retro .piece .black-side {
+            background: #000;
+            border-color: #555; 
         }
+
+        .piece .white-side {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #8c8c8c);
+            transform: rotateY(180deg);
+        }
+
+        body.retro .piece .white-side {
+            background: #fff;
+            border-color: #ccc;
+        }
+
+        .piece.white { transform: rotateY(180deg); }
+        .piece.black { transform: rotateY(0deg); }
 
         .scores {
             display: flex;
@@ -91,50 +153,59 @@
 
         .current-turn {
             font-weight: bold;
-            color: #ffca28;
+            color: var(--accent);
             margin-top: 10px;
             min-height: 1.5em;
-            transition: all 0.3s ease;
         }
         
-        /* Modal de fin de juego */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            color: #000;
+        }
+
         .message-box {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             padding: 30px;
-            border: 4px solid #ffca28;
+            border: 4px solid var(--accent);
             border-radius: 15px;
             text-align: center;
             display: none;
             z-index: 10;
-        }
-
-        .message-box button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #ffca28;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
     <div class="status-panel">
-        <h1>OTHELLO</h1>
+        <h1 id="title-text">OTHELLO</h1>
         <div id="turn-indicator" class="current-turn">Turno: Negras</div>
     </div>
 
     <div id="game-board"></div>
 
     <div class="scores">
-        <div>Negras: <span id="black-score">2</span></div>
-        <div>Blancas: <span id="white-score">2</span></div>
+        <div>NEGRAS: <span id="black-score">2</span></div>
+        <div>BLANCAS: <span id="white-score">2</span></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="toggleRetro()">Cambiar Modo (CPC 464)</button>
+        <button onclick="resetGame()">Reiniciar</button>
     </div>
 
     <div id="end-game-modal" class="message-box">
@@ -145,7 +216,7 @@
     <script>
         const BOARD_SIZE = 8;
         let board = [];
-        let currentPlayer = 'black'
+        let currentPlayer = 'black'; 
         let isBlackAI = false;
         let isWhiteAI = false;
 
@@ -156,262 +227,234 @@
         const modal = document.getElementById('end-game-modal');
         const winnerText = document.getElementById('winner-text');
 
+        const WEIGHTS = [
+            [500, -100, 20, 10, 10, 20, -100, 500],
+            [-100, -200, -5, -5, -5, -5, -200, -100],
+            [20, -5, 15, 3, 3, 15, -5, 20],
+            [10, -5, 3, 0, 0, 3, -5, 10],
+            [10, -5, 3, 0, 0, 3, -5, 10],
+            [20, -5, 15, 3, 3, 15, -5, 20],
+            [-100, -200, -5, -5, -5, -5, -200, -100],
+            [500, -100, 20, 10, 10, 20, -100, 500]
+        ];
+
         function initData() {
             board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
-            board[3][3] = 'white';
-            board[3][4] = 'black';
-            board[4][3] = 'black';
-            board[4][4] = 'white';
+            board[3][3] = 'white'; board[3][4] = 'black';
+            board[4][3] = 'black'; board[4][4] = 'white';
             currentPlayer = 'black';
+            isBlackAI = false; isWhiteAI = false;
             modal.style.display = 'none';
-            isBlackAI = false;
-            isWhiteAI = false;
+        }
+
+        function toggleRetro() {
+            document.body.classList.toggle('retro');
+            const title = document.getElementById('title-text');
+            title.textContent = document.body.classList.contains('retro') ? "AMTHELLO CPC" : "OTHELLO";
+        }
+
+        function playStoneSound() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const isRetro = document.body.classList.contains('retro');
+            
+            if (isRetro) {
+                // Sonido tipo "BEEP" de 8 bits (onda cuadrada)
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // La nota 'La'
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } else {
+                // Sonido moderno de golpe seco
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(280, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.06);
+                
+                gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.06);
+            }
         }
 
         function drawBoard() {
             boardElement.innerHTML = '';
-            let blackCount = 0;
-            let whiteCount = 0;
+            let blackCount = 0; let whiteCount = 0;
             const legalMoves = getAllLegalMoves(currentPlayer);
 
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
+                    cell.dataset.r = r; cell.dataset.c = c;
                     
-                const isLegal = legalMoves.some(m => m.r === r && m.c === c);
+                    const isLegal = legalMoves.some(m => m.r === r && m.c === c);
                     if (isLegal) {
                         cell.classList.add('legal');
                         cell.onclick = () => handleMove(r, c);
-                    } else {
+                    } else if (!board[r][c]) {
                         cell.onclick = () => {
-                            if (!board[r][c]) { // Clic en celda vacía pero ilegal
-                                if (currentPlayer === 'black') isBlackAI = true;
-                                else isWhiteAI = true;
-                                setTimeout(makeAIMove, 500);
-                            }
+                            if (currentPlayer === 'black') isBlackAI = true;
+                            else isWhiteAI = true;
+                            setTimeout(makeAIMove, 500);
                         };
                     }
-                    
+
                     if (board[r][c]) {
                         const piece = document.createElement('div');
                         piece.className = `piece ${board[r][c]}`;
+                        piece.innerHTML = `<div class="black-side"></div><div class="white-side"></div>`;
                         cell.appendChild(piece);
-                        if (board[r][c] === 'black') blackCount++;
-                        else whiteCount++;
+                        if (board[r][c] === 'black') blackCount++; else whiteCount++;
                     }
                     boardElement.appendChild(cell);
                 }
             }
             blackScoreEl.textContent = blackCount;
             whiteScoreEl.textContent = whiteCount;
-            turnIndicator.textContent = `Turno: ${currentPlayer === 'black' ? 'Negras' : 'Blancas'}`;
+            turnIndicator.textContent = `TURNO: ${currentPlayer === 'black' ? 'NEGRAS' : 'BLANCAS'}`;
         }
 
-        function handleMove(r, c) {
-            const flips = getFlips(r, c, currentPlayer);
-            playStoneSound();
-            board[r][c] = currentPlayer;
-            flips.forEach(([fr, fc]) => board[fr][fc] = currentPlayer);
-            nextTurn();
-        }
-
-        function nextTurn() {
-            const nextPlayer = currentPlayer === 'black' ? 'white' : 'black';
-            if (getAllLegalMoves(nextPlayer).length > 0) {
-                currentPlayer = nextPlayer;
-            } else if (getAllLegalMoves(currentPlayer).length === 0) {
-                endGame();
-                return;
-            } else {
-                const skippedPlayer = nextPlayer === 'black' ? 'Negras' : 'Blancas';
-                turnIndicator.textContent = `${skippedPlayer} pasan turno...`;
-                setTimeout(() => {
-                    turnIndicator.textContent = `Turno: ${currentPlayer === 'black' ? 'Negras' : 'Blancas'}`;
-                }, 2000);
-            }
-            if ((currentPlayer === 'black' && isBlackAI) || (currentPlayer === 'white' && isWhiteAI)) {
-                setTimeout(makeAIMove, 200);
-            }
-            
-            drawBoard();
-        }
-
-        function endGame() {
-            drawBoard();
-            const b = parseInt(blackScoreEl.textContent);
-            const w = parseInt(whiteScoreEl.textContent);
-            if (b > w) winnerText.textContent = `¡Ganan las Negras (${b}-${w})!`;
-            else if (w > b) winnerText.textContent = `¡Ganan las Blancas (${w}-${b})!`;
-            else winnerText.textContent = `¡Empate (${b}-${b})!`;
-            modal.style.display = 'block';
-        }
-
-        function resetGame() {
-            initData();
-            drawBoard();
-        }
-
-        function getAllLegalMoves(player, targetBoard = board) {
-            const moves = [];
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (!targetBoard[r][c] && getFlips(r, c, player, targetBoard).length > 0) {
-                        moves.push({ r, c });
+        function updatePiecesAnimation(lastMoveR, lastMoveC) {
+            const cells = boardElement.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const r = parseInt(cell.dataset.r);
+                const c = parseInt(cell.dataset.c);
+                let piece = cell.querySelector('.piece');
+                if (board[r][c]) {
+                    if (!piece) {
+                        piece = document.createElement('div');
+                        piece.innerHTML = `<div class="black-side"></div><div class="white-side"></div>`;
+                        cell.appendChild(piece);
                     }
+                    const dist = Math.max(Math.abs(r - lastMoveR), Math.abs(c - lastMoveC));
+                    void piece.offsetWidth; 
+                    piece.style.transitionDelay = (dist * 0.08) + 's';
+                    piece.className = `piece ${board[r][c]}`;
+                }
+            });
+            
+            let b = 0, w = 0;
+            board.flat().forEach(v => { if(v==='black') b++; if(v==='white') w++; });
+            blackScoreEl.textContent = b; whiteScoreEl.textContent = w;
+        }
+
+        function getAllLegalMoves(p, b = board) {
+            const moves = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (!b[r][c] && getFlips(r, c, p, b).length > 0) moves.push({ r, c });
                 }
             }
             return moves;
         }
 
-        function getFlips(r, c, player, targetBoard = board) {
-            const opponent = player === 'black' ? 'white' : 'black';
-            const directions = [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
-            let allFlips = [];
-            directions.forEach(([dr, dc]) => {
-                let currentFlips = [], currR = r + dr, currC = c + dc;
-                while (currR >= 0 && currR < BOARD_SIZE && currC >= 0 && currC < BOARD_SIZE) {
-                    if (targetBoard[currR][currC] === opponent) currentFlips.push([currR, currC]);
-                    else if (targetBoard[currR][currC] === player) {
-                        if (currentFlips.length > 0) allFlips = allFlips.concat(currentFlips);
-                        break;
-                    } else break;
-                    currR += dr; currC += dc;
+        function getFlips(r, c, p, b) {
+            const opp = p === 'black' ? 'white' : 'black';
+            const dirs = [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
+            let flips = [];
+            dirs.forEach(([dr, dc]) => {
+                let temp = [], cr = r + dr, cc = c + dc;
+                while (cr >= 0 && cr < 8 && cc >= 0 && cc < 8) {
+                    if (b[cr][cc] === opp) temp.push([cr, cc]);
+                    else if (b[cr][cc] === p) { if (temp.length > 0) flips = flips.concat(temp); break; }
+                    else break;
+                    cr += dr; cc += dc;
                 }
             });
-            return allFlips;
+            return flips;
         }
-        
-        function evaluateBoard(tempBoard) {
-            let score = 0;
-            const weights = [
-                [500, -100, 20, 10, 10, 20, -100, 500],
-                [-100, -200, -5, -5, -5, -5, -200, -100],
-                [20, -5, 15, 3, 3, 15, -5, 20],
-                [10, -5, 3, 0, 0, 3, -5, 10],
-                [10, -5, 3, 0, 0, 3, -5, 10],
-                [20, -5, 15, 3, 3, 15, -5, 20],
-                [-100, -200, -5, -5, -5, -5, -200, -100],
-                [500, -100, 20, 10, 10, 20, -100, 500]
-            ];
+
+        function handleMove(r, c) {
+            const flips = getFlips(r, c, currentPlayer, board);
+            if (flips.length === 0) return;
+            playStoneSound();
+            board[r][c] = currentPlayer;
+            flips.forEach(([fr, fc]) => board[fr][fc] = currentPlayer);
+            boardElement.querySelectorAll('.cell').forEach(ce => { ce.classList.remove('legal'); ce.onclick = null; });
+            updatePiecesAnimation(r, c);
+            setTimeout(nextTurn, (7 * 80) + 600);
+        }
+
+        function nextTurn() {
+            const nextP = currentPlayer === 'black' ? 'white' : 'black';
+            if (getAllLegalMoves(nextP).length > 0) currentPlayer = nextP;
+            else if (getAllLegalMoves(currentPlayer).length === 0) { endGame(); return; }
+            drawBoard();
+            if ((currentPlayer === 'black' && isBlackAI) || (currentPlayer === 'white' && isWhiteAI)) {
+                setTimeout(makeAIMove, 400);
+            }
+        }
+
+        function evaluate(b) {
+            let s = 0;
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
-                    if (tempBoard[r][c] === 'black') score += weights[r][c];
-                    else if (tempBoard[r][c] === 'white') score -= weights[r][c];
+                    if (b[r][c] === 'black') s += WEIGHTS[r][c];
+                    else if (b[r][c] === 'white') s -= WEIGHTS[r][c];
                 }
             }
-            return score;
+            return s;
         }
 
-        function minimax(tempBoard, depth, alpha, beta, maximizing) {
-            const player = maximizing ? 'black' : 'white';
-            const moves = getAllLegalMoves(player, tempBoard);
-            
-            if (depth === 0 || moves.length === 0) return evaluateBoard(tempBoard);
-
-            if (maximizing) {
-                let maxEval = -Infinity;
-                for (const move of moves) {
-                    const nextBoard = JSON.parse(JSON.stringify(tempBoard));
-                    const flips = getFlips(move.r, move.c, 'black', nextBoard);
-                    nextBoard[move.r][move.c] = 'black';
-                    flips.forEach(([fr, fc]) => nextBoard[fr][fc] = 'black');
-                    let ev = minimax(nextBoard, depth - 1, alpha, beta, false);
-                    maxEval = Math.max(maxEval, ev);
-                    alpha = Math.max(alpha, ev);
-                    if (beta <= alpha) break;
+        function minimax(b, depth, alpha, beta, maxing) {
+            const p = maxing ? 'black' : 'white';
+            const m = getAllLegalMoves(p, b);
+            if (depth === 0 || m.length === 0) return evaluate(b);
+            if (maxing) {
+                let v = -Infinity;
+                for (const move of m) {
+                    const nb = JSON.parse(JSON.stringify(b));
+                    const f = getFlips(move.r, move.c, 'black', nb);
+                    nb[move.r][move.c] = 'black'; f.forEach(x => nb[x[0]][x[1]] = 'black');
+                    v = Math.max(v, minimax(nb, depth - 1, alpha, beta, false));
+                    alpha = Math.max(alpha, v); if (beta <= alpha) break;
                 }
-                return maxEval;
+                return v;
             } else {
-                let minEval = Infinity;
-                for (const move of moves) {
-                    const nextBoard = JSON.parse(JSON.stringify(tempBoard));
-                    const flips = getFlips(move.r, move.c, 'white', nextBoard);
-                    nextBoard[move.r][move.c] = 'white';
-                    flips.forEach(([fr, fc]) => nextBoard[fr][fc] = 'white');
-                    let ev = minimax(nextBoard, depth - 1, alpha, beta, true);
-                    minEval = Math.min(minEval, ev);
-                    beta = Math.min(beta, ev);
-                    if (beta <= alpha) break;
+                let v = Infinity;
+                for (const move of m) {
+                    const nb = JSON.parse(JSON.stringify(b));
+                    const f = getFlips(move.r, move.c, 'white', nb);
+                    nb[move.r][move.c] = 'white'; f.forEach(x => nb[x[0]][x[1]] = 'white');
+                    v = Math.min(v, minimax(nb, depth - 1, alpha, beta, true));
+                    beta = Math.min(beta, v); if (beta <= alpha) break;
                 }
-                return minEval;
+                return v;
             }
         }
 
-        function getBestMove() {
-            const moves = getAllLegalMoves(currentPlayer, board);
-            if (moves.length === 0) return null;
-
-            let bestMoves = [];
-            let bestEval = (currentPlayer === 'black') ? -Infinity : Infinity;
-
-            for (const move of moves) {
-                const nextBoard = JSON.parse(JSON.stringify(board));
-                const flips = getFlips(move.r, move.c, currentPlayer, nextBoard);
-                nextBoard[move.r][move.c] = currentPlayer;
-                flips.forEach(([fr, fc]) => nextBoard[fr][fc] = currentPlayer);
-
-                // Evaluamos a profundidad 3
-                let ev = minimax(nextBoard, 3, -Infinity, Infinity, currentPlayer === 'white');
-
-                if (currentPlayer === 'black') {
-                    if (ev > bestEval) {
-                        bestEval = ev;
-                        bestMoves = [move];
-                    } else if (ev === bestEval) {
-                        bestMoves.push(move);
-                    }
-                } else {
-                    if (ev < bestEval) {
-                        bestEval = ev;
-                        bestMoves = [move];
-                    } else if (ev === bestEval) {
-                        bestMoves.push(move);
-                    }
-                }
-            }
-            
-            // Elegimos una al azar entre las que tienen la misma puntuación máxima
-            return bestMoves[Math.floor(Math.random() * bestMoves.length)];
-        }
-        
         function makeAIMove() {
-            if (modal.style.display === 'block') return;
-            const move = getBestMove();
-            if (move) handleMove(move.r, move.c);
+            const moves = getAllLegalMoves(currentPlayer, board);
+            if (!moves.length) return;
+            let best = null, bVal = (currentPlayer === 'black' ? -Infinity : Infinity);
+            moves.forEach(m => {
+                const nb = JSON.parse(JSON.stringify(board));
+                const f = getFlips(m.r, m.c, currentPlayer, nb);
+                nb[m.r][m.c] = currentPlayer; f.forEach(x => nb[x[0]][x[1]] = currentPlayer);
+                let v = minimax(nb, 3, -Infinity, Infinity, currentPlayer === 'white');
+                if (currentPlayer === 'black' ? v > bVal : v < bVal) { bVal = v; best = m; }
+            });
+            handleMove(best.r, best.c);
         }
 
-        function playStoneSound() {
-            // Configuración elegida: Inicio 280Hz, Fin 20Hz, Duración 0.06s
-            const START_FREQ = 280;
-            const END_FREQ = 20;
-            const DURATION = 0.06;
-        
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-        
-            oscillator.type = 'sine';
-            
-            // Frecuencia inicial
-            oscillator.frequency.setValueAtTime(START_FREQ, audioCtx.currentTime);
-            
-            // Caída exponencial hacia la frecuencia final
-            oscillator.frequency.exponentialRampToValueAtTime(END_FREQ, audioCtx.currentTime + DURATION);
-        
-            // Control de volumen (Gain) con desvanecimiento rápido
-            gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + DURATION);
-        
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-        
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + DURATION);
+        function endGame() {
+            const b = parseInt(blackScoreEl.textContent), w = parseInt(whiteScoreEl.textContent);
+            winnerText.textContent = b > w ? `GANAN NEGRAS (${b}-${w})` : (w > b ? `GANAN BLANCAS (${w}-${b})` : "EMPATE");
+            modal.style.display = 'block';
         }
-        
+
+        function resetGame() { initData(); drawBoard(); }
         window.onload = () => { initData(); drawBoard(); };
-
     </script>
 </body>
 </html>
