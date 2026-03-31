@@ -382,22 +382,32 @@
         }
 
         function playStoneSound() {
+            // Configuración elegida: Inicio 280Hz, Fin 20Hz, Duración 0.06s
+            const START_FREQ = 280;
+            const END_FREQ = 20;
+            const DURATION = 0.06;
+        
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
+        
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.1);
-
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-
+            
+            // Frecuencia inicial
+            oscillator.frequency.setValueAtTime(START_FREQ, audioCtx.currentTime);
+            
+            // Caída exponencial hacia la frecuencia final
+            oscillator.frequency.exponentialRampToValueAtTime(END_FREQ, audioCtx.currentTime + DURATION);
+        
+            // Control de volumen (Gain) con desvanecimiento rápido
+            gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + DURATION);
+        
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
+        
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+            oscillator.stop(audioCtx.currentTime + DURATION);
         }
         
         window.onload = () => { initData(); drawBoard(); };
