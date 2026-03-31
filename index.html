@@ -46,19 +46,34 @@
             text-align: center;
         }
 
+        #title-text {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* El marco del tablero es ahora el disparador del Easter Egg */
+        .board-container {
+            padding: 15px;
+            background-color: #3e2723;
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: pointer; /* Indica que es interactivo aunque sea secreto */
+            transition: background-color 0.3s;
+        }
+
+        body.retro .board-container {
+            background-color: #555;
+            box-shadow: 0 0 20px var(--text-color);
+            border-radius: 0;
+        }
+
         #game-board {
             display: grid;
             grid-template-columns: repeat(8, 60px);
             grid-template-rows: repeat(8, 60px);
             background-color: var(--cell-border);
-            border: 10px solid #3e2723;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             perspective: 1000px;
-        }
-
-        body.retro #game-board {
-            border: 10px solid #555;
-            box-shadow: 0 0 20px var(--text-color);
+            cursor: default; /* El interior del tablero tiene cursor normal */
         }
 
         .cell {
@@ -76,7 +91,7 @@
         }
 
         .cell:hover {
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
         .cell.legal::after {
@@ -157,22 +172,6 @@
             margin-top: 10px;
             min-height: 1.5em;
         }
-        
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background: var(--accent);
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 5px;
-            color: #000;
-        }
 
         .message-box {
             position: fixed;
@@ -187,30 +186,39 @@
             display: none;
             z-index: 10;
         }
+
+        button.modal-btn {
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            color: #000;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
 
     <div class="status-panel">
-        <h1 id="title-text">OTHELLO</h1>
+        <h1 id="title-text" onclick="resetGame()" title="Clic para reiniciar">OTHELLO</h1>
         <div id="turn-indicator" class="current-turn">Turno: Negras</div>
     </div>
 
-    <div id="game-board"></div>
+    <!-- El contenedor del tablero ahora es el botón secreto -->
+    <div class="board-container" onclick="toggleRetro(event)">
+        <div id="game-board"></div>
+    </div>
 
     <div class="scores">
         <div>NEGRAS: <span id="black-score">2</span></div>
         <div>BLANCAS: <span id="white-score">2</span></div>
     </div>
 
-    <div class="controls">
-        <button onclick="toggleRetro()">Cambiar Modo (CPC 464)</button>
-        <button onclick="resetGame()">Reiniciar</button>
-    </div>
-
     <div id="end-game-modal" class="message-box">
         <h2 id="winner-text"></h2>
-        <button onclick="resetGame()">Jugar de nuevo</button>
+        <button class="modal-btn" onclick="resetGame()">Jugar de nuevo</button>
     </div>
 
     <script>
@@ -247,10 +255,15 @@
             modal.style.display = 'none';
         }
 
-        function toggleRetro() {
-            document.body.classList.toggle('retro');
-            const title = document.getElementById('title-text');
-            title.textContent = document.body.classList.contains('retro') ? "AMTHELLO CPC" : "OTHELLO";
+        // Función para cambiar modo, activada por el marco
+        function toggleRetro(event) {
+            // Solo se activa si haces clic en el contenedor pero NO en las celdas
+            if (event.target.classList.contains('board-container')) {
+                document.body.classList.toggle('retro');
+                const title = document.getElementById('title-text');
+                title.textContent = document.body.classList.contains('retro') ? "AMTHELLO CPC" : "OTHELLO";
+                playStoneSound(); // Un pequeño feedback sonoro al cambiar
+            }
         }
 
         function playStoneSound() {
@@ -260,9 +273,8 @@
             const isRetro = document.body.classList.contains('retro');
             
             if (isRetro) {
-                // Sonido tipo "BEEP" de 8 bits (onda cuadrada)
                 oscillator.type = 'square';
-                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // La nota 'La'
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                 
@@ -271,7 +283,6 @@
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.1);
             } else {
-                // Sonido moderno de golpe seco
                 oscillator.type = 'sine';
                 oscillator.frequency.setValueAtTime(280, audioCtx.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.06);
@@ -300,9 +311,10 @@
                     const isLegal = legalMoves.some(m => m.r === r && m.c === c);
                     if (isLegal) {
                         cell.classList.add('legal');
-                        cell.onclick = () => handleMove(r, c);
+                        cell.onclick = (e) => { e.stopPropagation(); handleMove(r, c); };
                     } else if (!board[r][c]) {
-                        cell.onclick = () => {
+                        cell.onclick = (e) => {
+                            e.stopPropagation();
                             if (currentPlayer === 'black') isBlackAI = true;
                             else isWhiteAI = true;
                             setTimeout(makeAIMove, 500);
@@ -391,7 +403,7 @@
             else if (getAllLegalMoves(currentPlayer).length === 0) { endGame(); return; }
             drawBoard();
             if ((currentPlayer === 'black' && isBlackAI) || (currentPlayer === 'white' && isWhiteAI)) {
-                setTimeout(makeAIMove, 400);
+                setTimeout(makeAIMove, 200);
             }
         }
 
